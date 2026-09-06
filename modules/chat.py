@@ -1,40 +1,115 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
-from modules.omni import omnivoice_generate 
-model_name = "Qwen/Qwen3.5-0.8B"
+from modules.qwen import generate_qwen
 
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForCausalLM.from_pretrained(
-    model_name,
-    device_map="auto",
-    torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32
+from modules.memory import (
+    init_db,
+    get_messages,
+    save_message
 )
 
-def generate_text(user_input):
+from modules.omni import omnivoice_generate
+from modules.rag import retrieve
+
+
+# Create the database 
+init_db()
+
+
+SYSTEM_PROMPT = """
+You are a helpful conversational assistant.
+
+Always answer in English.
+Use the conversation history to maintain context.
+If the user tells you their name, remember it.
+If they ask for their name later, answer directly.
+Do not invent information.
+Keep your answers concise and natural.
+When relevant, prefer information from provided knowledge snippets and cite the source name (e.g., "Source: filename.md").
+If the user's question can be answered using the knowledge snippets, answer using those facts and do not contradict them.
+If the knowledge snippets contain an explicit answer to the user's question, respond using only that information and cite the source. If you are unsure, say "I don't know" rather than inventing answers.
+"""
+
+
+def generate_text(
+    user_input,
+    conversation_id
+):
+
+    # Get conversation history from the database
+    history = get_messages(
+        conversation_id
+    )
+
+
+    # Build the conversation
     messages = [
-        {"role": "system", "content": "Ets un assistent útil que parla en català."},
-        {"role": "user", "content": user_input}
+
+        {
+            "role": "system",
+            "content": SYSTEM_PROMPT
+        }
+
     ]
 
-    prompt = tokenizer.apply_chat_template(
-        messages,
-        tokenize=False,
-        add_generation_prompt=True
+
+    # Retrieve relevant knowledge snippets (RAG) and merge into the
+    # initial system message. The chat template requires the system
+    # message to be the first (and only) system role entry.
+    try:
+        snippets = retrieve(user_input, top_k=3)
+    except Exception:
+        snippets = []
+
+    if snippets:
+
+        knowledge_text = "\n\n---\n\n".join(
+            [f"Source: {s['source']}\n{s['content']}" for s in snippets]
+        )
+
+        # append knowledge to the existing system prompt
+        messages[0]["content"] = (
+            messages[0]["content"]
+            + "\n\nRelevant knowledge snippets:\n\n"
+            + knowledge_text
+        )
+
+
+    messages.extend(history)
+    print(f"Message: {messages[0]['content']}")
+
+    messages.append({
+
+        "role": "user",
+
+        "content": user_input
+
+    })
+
+
+    # Ask Qwen
+    text = generate_qwen(
+        messages
     )
 
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
 
-    output = model.generate(
-        **inputs,
-        max_new_tokens=200,
-        temperature=0.7
+    # Save user message
+    save_message(
+        conversation_id,
+        "user",
+        user_input
     )
 
-    return tokenizer.decode(output[0], skip_special_tokens=True)
 
-def chat_with_voice(user_input):
-    text = generate_text(user_input)
+    # Save answer
+    save_message(
+        conversation_id,
+        "assistant",
+        text
+    )
 
-    audio_path = omnivoice_generate(text)  
 
-    return audio_path
+    return text
+
+
+def chat_with_voice(text):
+
+    return omnivoice_generate(text)
