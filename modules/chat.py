@@ -1,29 +1,16 @@
 from modules.qwen import generate_qwen
 
-from modules.memory import (
-    init_db,
-    get_messages,
-    save_message
-)
-
 from modules.omni import omnivoice_generate
 from modules.rag import retrieve
 
 
-# Create the database 
-init_db()
-
-
 SYSTEM_PROMPT = """
-You are a helpful conversational assistant.
+You are a helpful knowledge-based assistant.
 
 Always answer in English.
-Use the conversation history to maintain context.
-If the user tells you their name, remember it.
-If they ask for their name later, answer directly.
 Do not invent information.
 Keep your answers concise and natural.
-When relevant, prefer information from provided knowledge snippets and cite the source name (e.g., "Source: filename.md").
+Use the provided knowledge snippets as your primary source and cite the source name (e.g., "Source: filename.md").
 If the user's question can be answered using the knowledge snippets, answer using those facts and do not contradict them.
 If the knowledge snippets contain an explicit answer to the user's question, respond using only that information and cite the source. If you are unsure, say "I don't know" rather than inventing answers.
 """
@@ -33,14 +20,7 @@ def generate_text(
     user_input,
     conversation_id
 ):
-
-    # Get conversation history from the database
-    history = get_messages(
-        conversation_id
-    )
-
-
-    # Build the conversation
+    # Build a stateless request so old conversations cannot influence RAG answers.
     messages = [
 
         {
@@ -73,7 +53,6 @@ def generate_text(
         )
 
 
-    messages.extend(history)
     print(f"Message: {messages[0]['content']}")
 
     messages.append({
@@ -88,22 +67,6 @@ def generate_text(
     # Ask Qwen
     text = generate_qwen(
         messages
-    )
-
-
-    # Save user message
-    save_message(
-        conversation_id,
-        "user",
-        user_input
-    )
-
-
-    # Save answer
-    save_message(
-        conversation_id,
-        "assistant",
-        text
     )
 
 

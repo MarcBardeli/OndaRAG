@@ -14,7 +14,7 @@ Small local chatbot that combines a local LLM (Qwen), a voice generator (OmniVoi
    ```bash
    uvicorn app:app --reload --host 0.0.0.0 --port 8000
    ```
-   4. Open the UI: http://127.0.0.1:8000/ / localhost:8000
+   4. Open the UI: http://127.0.0.1:8000/ or localhost:8000
 
 # Main endpoints
 - `GET /` — simple web UI

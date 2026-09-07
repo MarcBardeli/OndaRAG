@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
-from modules.memory import get_messages
+# from modules.memory import get_messages
 
 import os
 
@@ -97,13 +97,13 @@ async def upload_knowledge(file: UploadFile = File(...)):
 
 # ───── MEMORY ─────
 
-@app.get("/memory/{conversation_id}")
-def get_memory(conversation_id: str):
+# @app.get("/memory/{conversation_id}")
+# def get_memory(conversation_id: str):
 
-    return {
-        "conversation_id": conversation_id,
-        "messages": get_messages(conversation_id)
-    }
+#     return {
+#         "conversation_id": conversation_id,
+#         "messages": get_messages(conversation_id)
+#     }
 
 
 # ───── RETRIEVE ─────
