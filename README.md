@@ -4,20 +4,40 @@ Small local chatbot that combines a local LLM (Qwen), a voice generator (OmniVoi
 
 # Quick start
    1. Create and activate a Python virtualenv.
-   2. Install dependencies:
+   2. Install Python dependencies:
    ```bash
    pip install -r requirements.txt
    # optional (for better retrieval quality):
    pip install sentence-transformers numpy
    ```
-   3. Run the app:
+   3. Start the FastAPI backend:
    ```bash
    uvicorn app:app --reload --host 0.0.0.0 --port 8000
    ```
-   4. Open the UI: http://127.0.0.1:8000/ or localhost:8000
+   4. In a second terminal, install and run the React frontend during development:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+   5. Open the UI: http://127.0.0.1:5173/ or localhost:8000
+
+## Production frontend
+
+Build the React app and FastAPI will serve it from `/` while keeping all API endpoints available:
+
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+Open http://127.0.0.1:8000/ after the build.
 
 # Main endpoints
-- `GET /` — simple web UI
+- `GET /` — React web UI (served from `frontend/dist` after a production build)
 - `POST /chat` — chat API; JSON body: `{ "message": "...", "conversation_id": "..." }`
 - `POST /upload` — upload a `.txt` or `.md` file (multipart form `file`) — saves to `knowledge/` and reindexes
 - `GET /debug/retrieve?q=...` — returns retrieved snippets for a query (useful to debug RAG)
