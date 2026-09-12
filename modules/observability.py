@@ -6,7 +6,7 @@ import time
 from contextlib import contextmanager
 
 
-LOGGER = logging.getLogger("omni_car")
+LOGGER = logging.getLogger("vellum")
 
 
 def configure_logging():

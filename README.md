@@ -1,56 +1,65 @@
-### OmniCar — local RAG-enabled chatbot
+# Vellum
 
-Small local chatbot that combines a local LLM (Qwen), a voice generator (OmniVoice), and a simple RAG (retrieval-augmented generation) pipeline. Upload text or markdown files to `knowledge/` and the bot will use them to answer and cite sources.
+Vellum is a local voice assistant that answers questions from a small, user-owned knowledge base. It demonstrates a measurable retrieval-augmented generation (RAG) system rather than a general-purpose agent: documents are indexed locally, answers use retrieved evidence, and unsupported questions receive a clear no-answer response.
 
-# Quick start
-   1. Create and activate a Python virtualenv.
-   2. Install Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   # optional (for better retrieval quality):
-   pip install sentence-transformers numpy
-   ```
-   3. Start the FastAPI backend:
-   ```bash
-   uvicorn app:app --reload --host 0.0.0.0 --port 8000
-   ```
-   4. In a second terminal, install and run the React frontend during development:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-   5. Open the UI: http://127.0.0.1:5173/ or localhost:8000
+## Features
 
-## Production frontend
+- TXT and Markdown ingestion with paragraph-aware overlapping chunks
+- Hybrid semantic and lexical retrieval
+- Embedding fallback when `sentence-transformers` or FAISS is unavailable
+- Source and chunk citations, snippets, and retrieval scores
+- Knowledge inspector for query, source, score components, metadata, and latency
+- Deterministic no-answer handling below the evidence threshold
+- Local Qwen generation and optional OmniVoice text-to-speech
+- Accessible play, pause, stop, speed, status, keyboard, and reduced-motion controls
+- Lightweight JSON pipeline logs for embedding, vector search, retrieval, generation, TTS, and request latency
 
-Build the React app and FastAPI will serve it from `/` while keeping all API endpoints available:
+
+## RAG pipeline
+
+1. Files in `knowledge/` are read as UTF-8 TXT or Markdown and split into chunks up to 800 characters with 150 characters of overlap.
+2. `all-MiniLM-L6-v2` embeddings are normalized and indexed with FAISS when available. The same chunks remain searchable with token-overlap scoring as a lightweight fallback.
+3. Semantic and lexical candidates are merged using a 75/25 weighted score. Each result includes the source path, chunk ID, component scores, character count, and retrieval latency.
+4. Results below the minimum evidence score are discarded. The assistant returns a deterministic no-answer message instead of asking the LLM to guess.
+5. Relevant chunks are placed in the system prompt. The response is required to cite sources, and the backend adds a source footer if the model omits one.
+
+## Observability
+
+The `vellum` logger emits one-line JSON events suitable for local development. Events include `embedding`, `vector_search`, `retrieval`, `llm_generation`, `tts`, `request`, and error/no-answer events. No external telemetry service is required.
+
+## Run locally
+
+```bash
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app:app --reload --host 127.0.0.1 --port 8000
+```
+
+For frontend development, in a second terminal:
 
 ```bash
 cd frontend
 npm install
-npm run build
-cd ..
-uvicorn app:app --host 0.0.0.0 --port 8000
+npm run dev
 ```
 
-Open http://127.0.0.1:8000/ after the build.
+For a single production server:
 
-# Main endpoints
-- `GET /` — React web UI (served from `frontend/dist` after a production build)
-- `POST /chat` — chat API; JSON body: `{ "message": "...", "conversation_id": "..." }`
-- `POST /upload` — upload a `.txt` or `.md` file (multipart form `file`) — saves to `knowledge/` and reindexes
-- `GET /debug/retrieve?q=...` — returns retrieved snippets for a query (useful to debug RAG)
-- `GET /knowledge` — lists indexed documents (shows whether embeddings are present)
-- `GET /audio/{file_name}` — serves generated audio files
-- `GET /memory/{conversation_id}` — returns conversation history saved in `chat.db`
+```bash
+cd frontend && npm install && npm run build
+cd ..
+uvicorn app:app --host 127.0.0.1 --port 8000
+```
 
-# How RAG works
-- Uploaded files are split into chunks and indexed in memory at startup or after uploads.
-- If `sentence-transformers` is installed, chunks are embedded with `all-MiniLM-L6-v2` and retrieval uses cosine similarity.
-- If embeddings are not available the code falls back to a token-overlap heuristic (less accurate).
+Open `http://127.0.0.1:8000/` or `http://localhost:8000` after the production build, or the Vite URL during development.
 
-# Development notes
-- Knowledge files are stored in the `knowledge/` folder at project root. Filenames are used as citation sources.
-- Conversation history is saved in `chat.db` using SQLite.
-- To change the local LLM or voice model, edit `modules/qwen.py` and `modules/omni.py` respectively.
+
+## API and limitations
+
+- `POST /chat` accepts `{ "message": "...", "conversation_id": "..." }` and returns text, audio, and total latency.
+- `POST /upload` accepts `.txt` or `.md` files and reindexes the knowledge directory.
+- `GET /debug/retrieve?q=...` exposes retrieval records used by the inspector.
+- `GET /audio/{file_name}` serves generated audio files.
+
+The embedding and generation models can be slow on CPU, the lexical fallback is less capable than embeddings, supportedness is evaluated with retrieval evidence and simple checks rather than a separate judge model, and uploaded files are trusted local input. Conversation history is not used to influence RAG answers.
