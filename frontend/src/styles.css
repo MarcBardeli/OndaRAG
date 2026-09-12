@@ -27,6 +27,8 @@ button { cursor: pointer; }
 /* Keep keyboard navigation visible against the dark workspace. */
 :where(button, input, textarea, select):focus-visible { outline: 3px solid #f2f58d; outline-offset: 3px; }
 .topbar-actions { display: flex; align-items: center; gap: 16px; }
+.clean-audio { padding: 8px 11px; border: 1px solid #b46653; border-radius: 5px; color: #a64f3d; background: transparent; font-size: 11px; }
+.clean-audio:hover { color: #f8f4ec; background: #b46653; }
 .tts-toggle { display: flex; align-items: center; gap: 7px; color: #b8bec5; font-size: 11px; cursor: pointer; }
 .tts-toggle input { width: 15px; height: 15px; accent-color: #d6f36a; }
 .tts-controls { display: grid; gap: 7px; margin-top: 10px; }
@@ -115,6 +117,8 @@ body, .app-shell { background: #eee9df; }
 
 .theme-toggle { display: grid; place-items: center; width: 31px; height: 31px; padding: 0; border: 1px solid #b8afa2; border-radius: 4px; color: #52605f; background: transparent; font-size: 16px; }
 .theme-toggle:hover { border-color: #168cff; color: #168cff; }
+.theme-night .clean-audio { border-color: #e29a83; color: #e29a83; }
+.theme-night .clean-audio:hover { color: #071321; background: #e29a83; }
 .theme-day .status-dot { background: #7aa92e; box-shadow: 0 0 0 3px #dce9c4; }
 .theme-day .indexed-label { border-color: #b5c98e; color: #668c27; background: #edf4dc; }
 .theme-day .prompt-grid span, .theme-day .score { color: #668c27; }

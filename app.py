@@ -7,6 +7,9 @@ from pydantic import BaseModel
 import os
 import time
 
+
+AUDIO_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "audio")
+
 from modules.chat import (
     generate_text,
     chat_with_voice
@@ -68,7 +71,23 @@ def chat(req: ChatRequest):
 @app.get("/audio/{file_name}")
 def get_audio(file_name: str):
 
-    return FileResponse(file_name)
+    safe_file_name = os.path.basename(file_name)
+    return FileResponse(os.path.join(AUDIO_DIR, safe_file_name))
+
+
+@app.delete("/audio")
+def clean_audio():
+
+    deleted = 0
+
+    if os.path.isdir(AUDIO_DIR):
+        for file_name in os.listdir(AUDIO_DIR):
+            file_path = os.path.join(AUDIO_DIR, file_name)
+            if os.path.isfile(file_path) and file_name.lower().endswith(".wav"):
+                os.remove(file_path)
+                deleted += 1
+
+    return {"deleted": deleted}
 
 
 

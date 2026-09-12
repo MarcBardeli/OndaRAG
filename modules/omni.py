@@ -1,3 +1,4 @@
+import os
 import uuid
 
 from omnivoice import OmniVoice
@@ -12,7 +13,9 @@ import torch
 
 MODEL_NAME = "k2-fsa/OmniVoice"
 
-REF_AUDIO = "Nero.wav"
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+REF_AUDIO = os.path.join(PROJECT_DIR, "voices", "Girl.wav")
+AUDIO_DIR = os.path.join(PROJECT_DIR, "audio")
 
 
 # ─────────────────────────────────────
@@ -44,7 +47,9 @@ def omnivoice_generate(text):
     )
 
 
-    file_path = (
+    os.makedirs(AUDIO_DIR, exist_ok=True)
+    file_path = os.path.join(
+        AUDIO_DIR,
         f"audio_{uuid.uuid4().hex}.wav"
     )
 

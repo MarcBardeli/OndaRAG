@@ -85,6 +85,20 @@ function App() {
     }
   };
 
+  const cleanPastAudio = async () => {
+    if (!window.confirm('Are you sure you want to delete the audio?')) return;
+
+    try {
+      const response = await fetch('/audio', { method: 'DELETE' });
+      if (!response.ok) throw new Error('Could not clean past audio');
+      const data = await response.json();
+      setMessages((current) => current.map((message) => ({ ...message, audio: undefined })));
+      setNotice(`${data.deleted} past audio file${data.deleted === 1 ? '' : 's'} deleted`);
+    } catch (error) {
+      setNotice(error.message);
+    }
+  };
+
   return (
     <main className={`app-shell ${theme === 'night' ? 'theme-night' : 'theme-day'}`}>
       <aside className="sidebar" aria-label="Workspace navigation">
@@ -108,7 +122,7 @@ function App() {
       </aside>
 
       <section className="workspace">
-        <header className="topbar"><div><span className="eyebrow">LOCAL KNOWLEDGE</span><h1>Vellum assistant</h1></div><div className="topbar-actions"><label className="tts-toggle"><input type="checkbox" checked={autoTts} onChange={(event) => setAutoTts(event.target.checked)} /> <span>Auto-play responses</span></label><button className="theme-toggle" type="button" onClick={() => setTheme((current) => current === 'day' ? 'night' : 'day')} aria-label={`Switch to ${theme === 'day' ? 'night' : 'day'} theme`} title={`Switch to ${theme === 'day' ? 'night' : 'day'} theme`}><span aria-hidden="true">{theme === 'day' ? '☾' : '☀'}</span></button><button className="new-chat" type="button" onClick={startNewChat}><span aria-hidden="true">＋</span> <span>New chat</span></button></div></header>
+        <header className="topbar"><div><span className="eyebrow">LOCAL KNOWLEDGE</span><h1>Vellum assistant</h1></div><div className="topbar-actions"><label className="tts-toggle"><input type="checkbox" checked={autoTts} onChange={(event) => setAutoTts(event.target.checked)} /> <span>Auto-play responses</span></label><button className="clean-audio" type="button" onClick={cleanPastAudio}>Clean past audio</button><button className="theme-toggle" type="button" onClick={() => setTheme((current) => current === 'day' ? 'night' : 'day')} aria-label={`Switch to ${theme === 'day' ? 'night' : 'day'} theme`} title={`Switch to ${theme === 'day' ? 'night' : 'day'} theme`}><span aria-hidden="true">{theme === 'day' ? '☾' : '☀'}</span></button><button className="new-chat" type="button" onClick={startNewChat}><span aria-hidden="true">＋</span> <span>New chat</span></button></div></header>
         <div className="chat-stage">
           {messages.length === 0 ? <div className="welcome"><div className="welcome-symbol" aria-hidden="true">V</div><p className="eyebrow">YOUR PRIVATE READER</p><h2>What can I help you<br /><em>understand?</em></h2><p className="welcome-copy">Ask about your indexed knowledge, explore a topic, or bring in a new document to give Vellum more context.</p><div className="prompt-grid"><button type="button" onClick={() => setDraft('Summarize the key points in my knowledge base')}>Summarize my knowledge base <span aria-hidden="true">↗</span></button><button type="button" onClick={() => setDraft('What documents are available?')}>What is in my workspace? <span aria-hidden="true">↗</span></button></div></div> : <div className="messages" role="log" aria-label="Conversation messages" aria-live="off">{messages.map((message, index) => <Message key={`${message.role}-${index}`} message={message} autoTts={autoTts} />)}{busy && <div className="message assistant" role="status" aria-label="Vellum is thinking"><div className="avatar" aria-hidden="true">V</div><div className="bubble thinking" aria-hidden="true"><span /><span /><span /></div></div>}</div>}
         </div>
