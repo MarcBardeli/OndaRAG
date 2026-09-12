@@ -1,6 +1,6 @@
-# Vellum
+# OndaRAG
 
-Vellum is a local english voice assistant that answers questions from a small, user-owned knowledge base. It demonstrates a measurable retrieval-augmented generation (RAG) system rather than a general-purpose agent: documents are indexed locally, answers use retrieved evidence, and unsupported questions receive a clear no-answer response.
+OndaRAG is a local english voice assistant that answers questions from a small, user-owned knowledge base. It demonstrates a measurable retrieval-augmented generation (RAG) system rather than a general-purpose agent: documents are indexed locally, answers use retrieved evidence, and unsupported questions receive a clear no-answer response.
 
 ## Features
 
@@ -25,7 +25,7 @@ Vellum is a local english voice assistant that answers questions from a small, u
 
 ## Observability
 
-The `vellum` logger emits one-line JSON events suitable for local development. Events include `embedding`, `vector_search`, `retrieval`, `llm_generation`, `tts`, `request`, and error/no-answer events. No external telemetry service is required.
+The `OndaRAG` logger emits one-line JSON events suitable for local development. Events include `embedding`, `vector_search`, `retrieval`, `llm_generation`, `tts`, `request`, and error/no-answer events. No external telemetry service is required.
 
 ## Run locally
 
