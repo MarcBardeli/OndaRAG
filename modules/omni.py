@@ -27,8 +27,8 @@ print("Carregant OmniVoice...")
 
 model = OmniVoice.from_pretrained(
     MODEL_NAME,
-    device_map="cuda:0",
-    dtype=torch.float16
+    device_map="cuda:0" if torch.cuda.is_available() else "cpu",
+    dtype=torch.float16 if torch.cuda.is_available() else torch.float32
 )
 
 

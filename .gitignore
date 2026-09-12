@@ -8,3 +8,4 @@ frontend/dist/
 chat.db
 knowledge/
 .rag_index/
+audio/
