@@ -5,12 +5,14 @@ from pydantic import BaseModel
 # from modules.memory import get_messages
 
 import os
+import time
 
 from modules.chat import (
     generate_text,
     chat_with_voice
 )
 from fastapi import Query
+from modules.observability import log_event
 
 
 app = FastAPI()
@@ -30,6 +32,8 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 def chat(req: ChatRequest):
 
+    started = time.perf_counter()
+
     # Generar resposta
     text = generate_text(
 
@@ -46,12 +50,15 @@ def chat(req: ChatRequest):
     )
 
 
+    total_ms = round((time.perf_counter() - started) * 1000, 2)
+    log_event("request", route="/chat", latency_ms=total_ms)
+
     return {
 
         "text": text,
 
-        "audio":
-            f"/audio/{os.path.basename(audio_path)}"
+        "audio": f"/audio/{os.path.basename(audio_path)}",
+        "observability": {"total_latency_ms": total_ms},
 
     }
 
@@ -88,11 +95,12 @@ async def upload_knowledge(file: UploadFile = File(...)):
 
         reindex("knowledge")
 
-    except Exception:
+    except Exception as error:
+        log_event("reindex_error", error=str(error), source=filename)
 
-        pass
+        return {"filename": filename, "status": "saved", "indexed": False}
 
-    return {"filename": filename, "status": "ok"}
+    return {"filename": filename, "status": "ok", "indexed": True}
 
 
 
@@ -116,7 +124,12 @@ def debug_retrieve(q: str = Query(..., description="Query to retrieve from knowl
 
         snippets = retrieve(q, top_k=5)
 
-        return {"query": q, "results": snippets}
+        return {
+            "query": q,
+            "results": snippets,
+            "result_count": len(snippets),
+            "retrieval_ms": snippets[0].get("retrieval_ms", 0) if snippets else 0,
+        }
 
     except Exception as e:
         return {"error": str(e)}

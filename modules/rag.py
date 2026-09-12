@@ -2,7 +2,10 @@ import os
 import glob
 import re
 import pickle
+import time
 from typing import List
+
+from modules.observability import log_event, measure_stage
 
 try:
     import numpy as np
@@ -37,6 +40,7 @@ DEFAULT_TOP_K = 3
 SEMANTIC_WEIGHT = 0.75
 LEXICAL_WEIGHT = 0.25
 MIN_SEMANTIC_SCORE = 0.20
+MIN_RETRIEVAL_SCORE = 0.05
 
 # FAISS index
 INDEX_DIR = ".rag_index"
@@ -417,11 +421,12 @@ def _tokenize(text):
     if not text:
         return []
 
-    return re.findall(
+    tokens = re.findall(
         r"\w+",
         text.lower(),
         flags=re.UNICODE
     )
+    return [token[:-1] if len(token) > 4 and token.endswith("s") else token for token in tokens]
 
 
 def _score_basic(query, text):
@@ -495,10 +500,11 @@ def _semantic_search(query, k=SEMANTIC_CANDIDATES):
 
     try:
 
-        q_emb = _EMBED_MODEL.encode(
-            [query],
-            convert_to_numpy=True
-        )[0]
+        with measure_stage("embedding", operation="query"):
+            q_emb = _EMBED_MODEL.encode(
+                [query],
+                convert_to_numpy=True
+            )[0]
 
         q_emb = np.asarray(
             q_emb,
@@ -523,13 +529,14 @@ def _semantic_search(query, k=SEMANTIC_CANDIDATES):
                 len(DOCUMENTS)
             )
 
-            scores, indices = _FAISS_INDEX.search(
-                np.array(
-                    [q_emb],
-                    dtype="float32"
-                ),
-                search_k
-            )
+            with measure_stage("vector_search", backend="faiss", candidates=search_k):
+                scores, indices = _FAISS_INDEX.search(
+                    np.array(
+                        [q_emb],
+                        dtype="float32"
+                    ),
+                    search_k
+                )
 
             results = []
 
@@ -655,6 +662,8 @@ def retrieve(query, top_k=DEFAULT_TOP_K):
         4. Combined score
     """
 
+    started = time.perf_counter()
+
     if not query or not query.strip():
         return []
 
@@ -754,9 +763,18 @@ def retrieve(query, top_k=DEFAULT_TOP_K):
         reverse=True
     )
 
+    retrieval_ms = round((time.perf_counter() - started) * 1000, 2)
     final_results = []
 
     for result in results[:top_k]:
+
+        if result["score"] < MIN_RETRIEVAL_SCORE:
+            continue
+
+        document = next(
+            (doc for doc in DOCUMENTS if doc["id"] == result["id"]),
+            {},
+        )
 
         final_results.append({
             "source": result["source"],
@@ -764,7 +782,26 @@ def retrieve(query, top_k=DEFAULT_TOP_K):
             "score": float(
                 result["score"]
             ),
+            "semantic_score": float(result["semantic_score"]),
+            "lexical_score": float(result["lexical_score"]),
+            "id": result["id"],
+            "chunk_id": document.get("chunk_id"),
+            "metadata": {
+                "source": result["source"],
+                "chunk_id": document.get("chunk_id"),
+                "characters": len(result["content"]),
+            },
+            "retrieval_ms": retrieval_ms,
         })
+
+    log_event(
+        "retrieval",
+        query=query,
+        result_count=len(final_results),
+        top_k=top_k,
+        latency_ms=retrieval_ms,
+        backend="hybrid",
+    )
 
     return final_results
 

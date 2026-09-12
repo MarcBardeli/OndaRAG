@@ -49,3 +49,7 @@ button { cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
 	*, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
 }
+
+.retrieval-meta, .source-meta { color: #707782; font: 9px 'DM Mono', monospace; }
+.retrieval-meta { margin-top: 9px; }
+.source-meta { margin-top: 8px; }

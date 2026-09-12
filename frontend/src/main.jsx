@@ -13,6 +13,7 @@ function App() {
   const [file, setFile] = useState(null);
   const [query, setQuery] = useState('');
   const [sources, setSources] = useState([]);
+  const [retrievalMeta, setRetrievalMeta] = useState(null);
   const [autoTts, setAutoTts] = useState(() => localStorage.getItem('omni_auto_tts') === 'true');
   const inputRef = useRef(null);
 
@@ -75,8 +76,10 @@ function App() {
       const response = await fetch(`/debug/retrieve?q=${encodeURIComponent(query)}`);
       const data = await response.json();
       setSources(data.results || []);
+      setRetrievalMeta({ count: data.result_count || 0, latency: data.retrieval_ms || 0 });
     } catch {
       setSources([]);
+      setRetrievalMeta(null);
     }
   };
 
@@ -110,7 +113,7 @@ function App() {
         <div className="composer-wrap"><form className="composer" onSubmit={sendMessage}><textarea ref={inputRef} aria-label="Message OmniCar" value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(event); } }} placeholder="Ask OmniCar anything..." rows="1" disabled={busy} /><button className="send-button" type="submit" aria-label="Send message" disabled={!draft.trim() || busy}>↑</button></form><div className="composer-meta"><span aria-live="polite">{notice || 'Enter to send · Shift + Enter for a new line'}</span><span>Responses use your local knowledge</span></div></div>
       </section>
 
-      <aside className="inspector" aria-label="Knowledge inspector"><div className="inspector-heading"><div><span className="eyebrow">CONTEXT</span><h2>Knowledge inspector</h2></div><span className="live-pill"><span aria-hidden="true" /> LIVE</span></div><p className="inspector-copy">Search the indexed documents directly and see the context available to your assistant.</p><form className="search-box" onSubmit={inspectKnowledge}><span aria-hidden="true">⌕</span><input aria-label="Search knowledge" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search knowledge..." /><button type="submit" aria-label="Search knowledge">↵</button></form><div className="source-list">{sources.length ? sources.map((source, index) => <article className="source-card" key={`${source.source}-${index}`}><div className="source-top"><span className="file-badge">TXT</span><strong>{source.source}</strong><span className="score">{Math.round((source.score || 0) * 100)}%</span></div><p>{source.content}</p></article>) : <div className="empty-sources"><div aria-hidden="true">⌁</div><strong>No context loaded</strong><span>Search above to inspect relevant passages.</span></div>}</div><div className="inspector-note"><span aria-hidden="true">i</span><p>OmniCar runs locally. Your documents stay on this machine.</p></div></aside>
+      <aside className="inspector" aria-label="Knowledge inspector"><div className="inspector-heading"><div><span className="eyebrow">CONTEXT</span><h2>Knowledge inspector</h2></div><span className="live-pill"><span aria-hidden="true" /> LIVE</span></div><p className="inspector-copy">Search the indexed documents directly and see the context available to your assistant.</p><form className="search-box" onSubmit={inspectKnowledge}><span aria-hidden="true">⌕</span><input aria-label="Search knowledge" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search knowledge..." /><button type="submit" aria-label="Search knowledge">↵</button></form>{retrievalMeta && <div className="retrieval-meta">{retrievalMeta.count} chunks · {retrievalMeta.latency} ms</div>}<div className="source-list">{sources.length ? sources.map((source, index) => <article className="source-card" key={`${source.source}-${index}`}><div className="source-top"><span className="file-badge">TXT</span><strong>{source.source}</strong><span className="score">{(source.score || 0).toFixed(3)}</span></div><div className="source-meta">chunk {source.chunk_id ?? '-'} · semantic {(source.semantic_score || 0).toFixed(3)} · lexical {(source.lexical_score || 0).toFixed(3)}</div><p>{source.content}</p></article>) : <div className="empty-sources"><div aria-hidden="true">⌁</div><strong>No context loaded</strong><span>Search above to inspect relevant passages.</span></div>}</div><div className="inspector-note"><span aria-hidden="true">i</span><p>OmniCar runs locally. Your documents stay on this machine.</p></div></aside>
     </main>
   );
 }
