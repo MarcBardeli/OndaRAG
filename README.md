@@ -1,6 +1,6 @@
 # Vellum
 
-Vellum is a local voice assistant that answers questions from a small, user-owned knowledge base. It demonstrates a measurable retrieval-augmented generation (RAG) system rather than a general-purpose agent: documents are indexed locally, answers use retrieved evidence, and unsupported questions receive a clear no-answer response.
+Vellum is a local english voice assistant that answers questions from a small, user-owned knowledge base. It demonstrates a measurable retrieval-augmented generation (RAG) system rather than a general-purpose agent: documents are indexed locally, answers use retrieved evidence, and unsupported questions receive a clear no-answer response.
 
 ## Features
 
@@ -54,6 +54,22 @@ uvicorn app:app --host 127.0.0.1 --port 8000
 
 Open `http://127.0.0.1:8000/` or `http://localhost:8000` after the production build, or the Vite URL during development.
 
+## Run with Docker
+
+Docker is optional and does not replace the local workflow above. The image builds the React frontend and runs the FastAPI app with NVIDIA CUDA 12.8 and cuDNN:
+
+```bash
+docker compose up --build
+```
+
+Open `http://localhost:8000`. Uploaded files are kept in the local `knowledge/` and `audio/` directories; downloaded model files and the retrieval index are stored in Docker volumes. The image requires an NVIDIA GPU because it installs CUDA-enabled PyTorch wheels. Stop it with:
+
+```bash
+docker compose down
+```
+
+The Docker image uses the same application code and does not affect `venv`, `npm run dev`, or the existing local commands. Docker Desktop must have GPU support enabled, and the host needs a compatible NVIDIA driver and NVIDIA Container Toolkit. Verify GPU access with `docker run --rm --gpus all nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04 nvidia-smi` before starting the app.
+
 
 ## API and limitations
 
@@ -63,3 +79,5 @@ Open `http://127.0.0.1:8000/` or `http://localhost:8000` after the production bu
 - `GET /audio/{file_name}` serves generated audio files.
 
 The embedding and generation models can be slow on CPU, the lexical fallback is less capable than embeddings, supportedness is evaluated with retrieval evidence and simple checks rather than a separate judge model, and uploaded files are trusted local input. Conversation history is not used to influence RAG answers.
+
+The model used is a very small Qwen model, so English currently provides the best results. The model can be easily replaced with a larger one to achieve better results in other languages.

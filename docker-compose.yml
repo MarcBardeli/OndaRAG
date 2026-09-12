@@ -1,0 +1,16 @@
+services:
+  vellum:
+    build: .
+    gpus: all
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./knowledge:/app/knowledge
+      - ./audio:/app/audio
+      - rag_index:/app/.rag_index
+      - huggingface_cache:/root/.cache/huggingface
+    restart: unless-stopped
+
+volumes:
+  rag_index:
+  huggingface_cache:
