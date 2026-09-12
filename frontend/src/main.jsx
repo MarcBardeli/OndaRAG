@@ -15,10 +15,12 @@ function App() {
   const [sources, setSources] = useState([]);
   const [retrievalMeta, setRetrievalMeta] = useState(null);
   const [autoTts, setAutoTts] = useState(() => localStorage.getItem('omni_auto_tts') === 'true');
+  const [theme, setTheme] = useState(() => localStorage.getItem('vellum_theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'day'));
   const inputRef = useRef(null);
 
   useEffect(() => localStorage.setItem('omni_conversation', conversationId), [conversationId]);
   useEffect(() => localStorage.setItem('omni_auto_tts', String(autoTts)), [autoTts]);
+  useEffect(() => localStorage.setItem('vellum_theme', theme), [theme]);
 
   const startNewChat = () => {
     setConversationId(newId());
@@ -34,7 +36,7 @@ function App() {
     setDraft('');
     setMessages((current) => [...current, { role: 'user', content: message }]);
     setBusy(true);
-    setNotice('OmniCar is thinking...');
+    setNotice('Vellum is thinking...');
     try {
       const response = await fetch('/chat', {
         method: 'POST',
@@ -84,12 +86,12 @@ function App() {
   };
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell ${theme === 'night' ? 'theme-night' : 'theme-day'}`}>
       <aside className="sidebar" aria-label="Workspace navigation">
-        <div className="brand"><span className="brand-mark">O</span><span>OMNICAR</span><span className="brand-dot" /></div>
+        <div className="brand"><span className="brand-mark">V</span><span>VELLUM</span></div>
         <div className="sidebar-section">
           <div className="section-label">Workspace</div>
-          <button className="nav-item active" type="button" aria-current="page"><span className="nav-icon" aria-hidden="true">✦</span> Assistant <span className="nav-count">1</span></button>
+          <button className="nav-item active" type="button" aria-current="page"><span className="nav-icon" aria-hidden="true">V</span> Assistant <span className="nav-count">1</span></button>
           <button className="nav-item" type="button" onClick={startNewChat}><span className="nav-icon" aria-hidden="true">＋</span> New conversation</button>
         </div>
         <div className="sidebar-section knowledge-section">
@@ -106,14 +108,14 @@ function App() {
       </aside>
 
       <section className="workspace">
-        <header className="topbar"><div><span className="eyebrow">LOCAL INTELLIGENCE</span><h1>OmniCar assistant</h1></div><div className="topbar-actions"><label className="tts-toggle"><input type="checkbox" checked={autoTts} onChange={(event) => setAutoTts(event.target.checked)} /> <span>Auto-play responses</span></label><button className="new-chat" type="button" onClick={startNewChat}><span aria-hidden="true">＋</span> <span>New chat</span></button></div></header>
+        <header className="topbar"><div><span className="eyebrow">LOCAL KNOWLEDGE</span><h1>Vellum assistant</h1></div><div className="topbar-actions"><label className="tts-toggle"><input type="checkbox" checked={autoTts} onChange={(event) => setAutoTts(event.target.checked)} /> <span>Auto-play responses</span></label><button className="theme-toggle" type="button" onClick={() => setTheme((current) => current === 'day' ? 'night' : 'day')} aria-label={`Switch to ${theme === 'day' ? 'night' : 'day'} theme`} title={`Switch to ${theme === 'day' ? 'night' : 'day'} theme`}><span aria-hidden="true">{theme === 'day' ? '☾' : '☀'}</span></button><button className="new-chat" type="button" onClick={startNewChat}><span aria-hidden="true">＋</span> <span>New chat</span></button></div></header>
         <div className="chat-stage">
-          {messages.length === 0 ? <div className="welcome"><div className="welcome-symbol" aria-hidden="true">✦</div><p className="eyebrow">YOUR PRIVATE COPILOT</p><h2>What can I help you<br /><em>understand?</em></h2><p className="welcome-copy">Ask about your indexed knowledge, explore a topic, or bring in a new document to give OmniCar more context.</p><div className="prompt-grid"><button type="button" onClick={() => setDraft('Summarize the key points in my knowledge base')}>Summarize my knowledge base <span aria-hidden="true">↗</span></button><button type="button" onClick={() => setDraft('What documents are available?')}>What is in my workspace? <span aria-hidden="true">↗</span></button></div></div> : <div className="messages" role="log" aria-label="Conversation messages" aria-live="off">{messages.map((message, index) => <Message key={`${message.role}-${index}`} message={message} autoTts={autoTts} />)}{busy && <div className="message assistant" role="status" aria-label="OmniCar is thinking"><div className="avatar" aria-hidden="true">O</div><div className="bubble thinking" aria-hidden="true"><span /><span /><span /></div></div>}</div>}
+          {messages.length === 0 ? <div className="welcome"><div className="welcome-symbol" aria-hidden="true">V</div><p className="eyebrow">YOUR PRIVATE READER</p><h2>What can I help you<br /><em>understand?</em></h2><p className="welcome-copy">Ask about your indexed knowledge, explore a topic, or bring in a new document to give Vellum more context.</p><div className="prompt-grid"><button type="button" onClick={() => setDraft('Summarize the key points in my knowledge base')}>Summarize my knowledge base <span aria-hidden="true">↗</span></button><button type="button" onClick={() => setDraft('What documents are available?')}>What is in my workspace? <span aria-hidden="true">↗</span></button></div></div> : <div className="messages" role="log" aria-label="Conversation messages" aria-live="off">{messages.map((message, index) => <Message key={`${message.role}-${index}`} message={message} autoTts={autoTts} />)}{busy && <div className="message assistant" role="status" aria-label="Vellum is thinking"><div className="avatar" aria-hidden="true">V</div><div className="bubble thinking" aria-hidden="true"><span /><span /><span /></div></div>}</div>}
         </div>
-        <div className="composer-wrap"><form className="composer" onSubmit={sendMessage}><textarea ref={inputRef} aria-label="Message OmniCar" value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(event); } }} placeholder="Ask OmniCar anything..." rows="1" disabled={busy} /><button className="send-button" type="submit" aria-label="Send message" disabled={!draft.trim() || busy}>↑</button></form><div className="composer-meta"><span aria-live="polite">{notice || 'Enter to send · Shift + Enter for a new line'}</span><span>Responses use your local knowledge</span></div></div>
+        <div className="composer-wrap"><form className="composer" onSubmit={sendMessage}><textarea ref={inputRef} aria-label="Message Vellum" value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(event); } }} placeholder="Ask Vellum anything..." rows="1" disabled={busy} /><button className="send-button" type="submit" aria-label="Send message" disabled={!draft.trim() || busy}>↑</button></form><div className="composer-meta"><span aria-live="polite">{notice || 'Enter to send · Shift + Enter for a new line'}</span><span>Responses use your local knowledge</span></div></div>
       </section>
 
-      <aside className="inspector" aria-label="Knowledge inspector"><div className="inspector-heading"><div><span className="eyebrow">CONTEXT</span><h2>Knowledge inspector</h2></div><span className="live-pill"><span aria-hidden="true" /> LIVE</span></div><p className="inspector-copy">Search the indexed documents directly and see the context available to your assistant.</p><form className="search-box" onSubmit={inspectKnowledge}><span aria-hidden="true">⌕</span><input aria-label="Search knowledge" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search knowledge..." /><button type="submit" aria-label="Search knowledge">↵</button></form>{retrievalMeta && <div className="retrieval-meta">{retrievalMeta.count} chunks · {retrievalMeta.latency} ms</div>}<div className="source-list">{sources.length ? sources.map((source, index) => <article className="source-card" key={`${source.source}-${index}`}><div className="source-top"><span className="file-badge">TXT</span><strong>{source.source}</strong><span className="score">{(source.score || 0).toFixed(3)}</span></div><div className="source-meta">chunk {source.chunk_id ?? '-'} · semantic {(source.semantic_score || 0).toFixed(3)} · lexical {(source.lexical_score || 0).toFixed(3)}</div><p>{source.content}</p></article>) : <div className="empty-sources"><div aria-hidden="true">⌁</div><strong>No context loaded</strong><span>Search above to inspect relevant passages.</span></div>}</div><div className="inspector-note"><span aria-hidden="true">i</span><p>OmniCar runs locally. Your documents stay on this machine.</p></div></aside>
+      <aside className="inspector" aria-label="Knowledge inspector"><div className="inspector-heading"><div><span className="eyebrow">CONTEXT</span><h2>Knowledge inspector</h2></div><span className="indexed-label">INDEXED</span></div><p className="inspector-copy">Search the indexed documents directly and see the context available to your assistant.</p><form className="search-box" onSubmit={inspectKnowledge}><span aria-hidden="true">⌕</span><input aria-label="Search knowledge" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search knowledge..." /><button type="submit" aria-label="Search knowledge">↵</button></form>{retrievalMeta && <div className="retrieval-meta">{retrievalMeta.count} chunks · {retrievalMeta.latency} ms</div>}<div className="source-list">{sources.length ? sources.map((source, index) => <article className="source-card" key={`${source.source}-${index}`}><div className="source-top"><span className="file-badge">TXT</span><strong>{source.source}</strong><span className="score">{(source.score || 0).toFixed(3)}</span></div><div className="source-meta">chunk {source.chunk_id ?? '-'} · semantic {(source.semantic_score || 0).toFixed(3)} · lexical {(source.lexical_score || 0).toFixed(3)}</div><p>{source.content}</p></article>) : <div className="empty-sources"><div aria-hidden="true">-</div><strong>No context loaded</strong><span>Search above to inspect relevant passages.</span></div>}</div><div className="inspector-note"><span aria-hidden="true">i</span><p>Vellum runs locally. Your documents stay on this machine.</p></div></aside>
     </main>
   );
 }
@@ -121,7 +123,7 @@ function App() {
 function Message({ message, autoTts }) {
   if (message.role === 'error') return <div className="error-message" role="alert">{message.content}</div>;
   const assistant = message.role === 'assistant';
-  return <article className={`message ${assistant ? 'assistant' : 'user'}`}><div className="avatar" aria-hidden="true">{assistant ? 'O' : 'Y'}</div><div className="message-body"><span className="message-label">{assistant ? 'OMNICAR' : 'YOU'}</span><div className="bubble">{message.content}</div>{assistant && message.audio && <TtsControls src={message.audio} autoPlay={autoTts} />}</div></article>;
+  return <article className={`message ${assistant ? 'assistant' : 'user'}`}><div className="avatar" aria-hidden="true">{assistant ? 'V' : 'Y'}</div><div className="message-body"><span className="message-label">{assistant ? 'VELLUM' : 'YOU'}</span><div className="bubble">{message.content}</div>{assistant && message.audio && <TtsControls src={message.audio} autoPlay={autoTts} />}</div></article>;
 }
 
 function TtsControls({ src, autoPlay }) {
